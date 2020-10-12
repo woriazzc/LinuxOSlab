@@ -1,0 +1,5 @@
+<<<<<<< HEAD
+djsada p.txt
+=======
+/home/woria/OSlab/Pro1
+>>>>>>> 229bb6915ac6ec0166ffa38827878e065c77dfed

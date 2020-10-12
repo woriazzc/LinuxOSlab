@@ -1,0 +1,44 @@
+!SESSION 2020-10-11 11:00:30.134 -----------------------------------------------
+eclipse.buildId=4.17.0.I20200902-1800
+java.version=14.0.2
+java.vendor=Oracle Corporation
+BootLoader constants: OS=linux, ARCH=x86_64, WS=gtk, NL=zh_CN
+Framework arguments:  -product org.eclipse.epp.package.cpp.product
+Command-line arguments:  -data /home/woria/Desktop/xv6 -os linux -ws gtk -arch x86_64 -product org.eclipse.epp.package.cpp.product
+
+!ENTRY org.eclipse.ui.ide 4 0 2020-10-11 11:01:27.865
+!MESSAGE Could not import project located at /home/woria/Desktop/xv6
+!STACK 0
+org.eclipse.ui.internal.wizards.datatransfer.CouldNotImportProjectException: Could not import project located at /home/woria/Desktop/xv6
+	at org.eclipse.ui.internal.wizards.datatransfer.SmartImportJob.toExistingOrNewProject(SmartImportJob.java:565)
+	at org.eclipse.ui.internal.wizards.datatransfer.SmartImportJob.run(SmartImportJob.java:252)
+	at org.eclipse.core.internal.jobs.Worker.run(Worker.java:63)
+Caused by: org.eclipse.core.internal.resources.ResourceException: Invalid project description.
+	at org.eclipse.core.internal.resources.Project.checkDescription(Project.java:173)
+	at org.eclipse.core.internal.resources.Project.assertCreateRequirements(Project.java:57)
+	at org.eclipse.core.internal.resources.Project.create(Project.java:266)
+	at org.eclipse.core.internal.resources.Project.create(Project.java:252)
+	at org.eclipse.ui.internal.wizards.datatransfer.SmartImportJob.createOrImportProject(SmartImportJob.java:604)
+	at org.eclipse.ui.internal.wizards.datatransfer.SmartImportJob.toExistingOrNewProject(SmartImportJob.java:552)
+	... 2 more
+
+!ENTRY org.eclipse.core.resources 4 77 2020-10-11 11:02:49.488
+!MESSAGE Invalid project description.
+!SUBENTRY 1 unknown 0 0 2020-10-11 11:02:49.488
+!MESSAGE OK
+!SUBENTRY 1 org.eclipse.core.resources 4 77 2020-10-11 11:02:49.488
+!MESSAGE /home/woria/Desktop/xv6 overlaps the workspace location: /home/woria/Desktop/xv6
+
+!ENTRY org.eclipse.core.resources 4 77 2020-10-11 11:03:40.607
+!MESSAGE Invalid project description.
+!SUBENTRY 1 unknown 0 0 2020-10-11 11:03:40.607
+!MESSAGE OK
+!SUBENTRY 1 org.eclipse.core.resources 4 77 2020-10-11 11:03:40.607
+!MESSAGE /home/woria/Desktop/xv6 overlaps the workspace location: /home/woria/Desktop/xv6
+
+!ENTRY org.eclipse.core.resources 4 77 2020-10-11 11:04:19.248
+!MESSAGE Invalid project description.
+!SUBENTRY 1 unknown 0 0 2020-10-11 11:04:19.248
+!MESSAGE OK
+!SUBENTRY 1 org.eclipse.core.resources 4 77 2020-10-11 11:04:19.248
+!MESSAGE /home/woria/Desktop/xv6 overlaps the workspace location: /home/woria/Desktop/xv6
