@@ -1,0 +1,16 @@
+syscall.h line26:增加 #define SYS_getreadcount 22
+
+syscall.c line106:增加 [SYS_getreadcount]	sys_getreadcount,
+
+sysfile.c line78:增加函数 sys_getreadcount
+	int
+	sys_getreadcount(void)
+	{
+		return readcount;
+	}
+
+sysfunc.h line26:增加 int sys_getreadcount(void);
+
+user.h line28:增加 int getreadcount(void);
+
+usys.S line32:增加 SYSCALL(getreadcount)
