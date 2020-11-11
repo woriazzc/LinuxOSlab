@@ -14,7 +14,6 @@ struct {
 
 
 int mxtick[NPriority] = {0x3f3f3f3f, 32, 16, 8};
-int wait_limit[NPriority] = {500, 320, 160, 80};
 static struct proc *initproc;
 
 int nextpid = 1;
@@ -261,36 +260,36 @@ wait(void)
 //  - swtch to start running that process
 //  - eventually that process transfers control
 //      via swtch back to the scheduler.
+
 void
 scheduler(void)
 {
   struct proc *p;
-  struct proc *pr[NPriority], *prunning[NPriority];
-  int poccur = 0, flg = 0;
+  struct proc *pr[NPriority];
+  int nd_sched = 0;
   proc = 0;
-  for(int i = 0; i < NPriority; i++){
-	  prunning[i] = NULL;
-  }
   for(;;){
     // Enable interrupts on this processor.
     sti();
 
     // Loop over process table looking for process to run.
     acquire(&ptable.lock);
-    flg = 0;
-    for(int i = 0; i < NPriority; i++){
-    	if(prunning[i]!=NULL){
-    		flg = 1;
-    		break;
-    	}
+    if(proc != NULL && !nd_sched){
+    	for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+			  if(p->state != RUNNABLE)continue;
+			  if(p->priority > proc->priority){
+				  nd_sched = 1;
+				  break;
+			  }
+		}
     }
-    if(poccur || !flg){
+    if(proc == NULL || nd_sched){
     	for(int i = 0; i < NPriority; i++)pr[i] = NULL;
     	for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
     	      if(p->state != RUNNABLE)continue;
     	      if(pr[p->priority] == NULL)pr[p->priority] = p;
     	}
-    	poccur = 0;
+    	nd_sched = 0;
     }
     for(int i = NPriority - 1; i >= 0; i--){
     	if(pr[i] != NULL){
@@ -302,31 +301,26 @@ scheduler(void)
     	release(&ptable.lock);
     	continue;
     }
-    prunning[proc->priority] = proc;
-    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-    	if(p != proc){
-    		p->waited_ticks[p->priority]++;
-			if(p->priority == NPriority - 1)continue;
-			if((p->priority == 0 && p->waited_ticks[p->priority] >= 500)
-				|| p->waited_ticks[p->priority] >= 10*mxtick[p->priority]){
-				p->priority++;
-				p->waited_ticks[p->priority] = 0;
-				p->used_ticks[p->priority] = 0;
-				if(p->priority > proc->priority)poccur = 1;
-			}
-    	}
-    	else{
-    		for(int i = 0; i < NPriority; i++){
-				proc->waited_ticks[i] = 0;
-			}
-			proc->used_ticks[proc->priority]++;
-			if(proc->used_ticks[proc->priority] >= mxtick[proc->priority]){
-				prunning[proc->priority] = NULL;
-				proc->priority--;
-				proc->used_ticks[proc->priority] = 0;
-			}
-    	}
-    }
+    for (p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+		if(p->pid == proc->pid){
+			continue;
+		}
+		if (p->state == RUNNABLE) {
+				p->waited_ticks[p->priority]++;
+		}
+		if ((p->priority == 0 && p->waited_ticks[p->priority] == 500)
+			|| (p->priority != 0 && p->waited_ticks[p->priority] == 10*mxtick[p->priority])) {
+			if(p->priority != NPriority - 1)p->priority++;
+		}
+	}
+    for(int i = 0; i < NPriority; i++){
+		proc->waited_ticks[i] = 0;
+	}
+	proc->used_ticks[proc->priority]++;
+	if(proc->used_ticks[proc->priority] % mxtick[proc->priority] == 0 && proc->priority != 0){
+		nd_sched = 1;
+		proc->priority--;
+	}
 
 	switchuvm(proc);
 	proc->state = RUNNING;
@@ -334,111 +328,11 @@ scheduler(void)
 	switchkvm();
 
 	if(proc->state != RUNNABLE){
-		prunning[proc->priority] = NULL;
+		nd_sched = 1;
 	}
-	// Process is done running for now.
-	// It should have changed its p->state before coming back.
-	proc = 0;
     release(&ptable.lock);
   }
 }
-
-//void
-//scheduler(void)
-//{
-//	struct proc *p;
-//	struct proc* p3 = NULL;//zjh:queue pointers
-//	struct proc* p2 = NULL;
-//	struct proc* p1 = NULL;
-//	struct proc* p0 = NULL;
-//	int quetag[4] = { 0, 0, 0, 0 };//zjh:is each queue has a process
-//	int quefir[4] = { 0, 0, 0, 0 };
-//	int poccurs = 0;
-//	int i;
-//	struct proc* t;
-//
-//	for (;;) {
-//		//zjh:interrupts on this processor, process will experience sleep and wakeup
-//		//cprintf("qlock:%d %d %d %d\n",quetag[0],quetag[1],quetag[2],quetag[3]);//zjh:ues for
-//		sti();
-//		acquire(&ptable.lock);
-//		/*----------zjh:step1:find next process and add in its queue-------------*/
-//		if (!(quetag[0] || quetag[1] || quetag[2] || quetag[3]) || poccurs == 1) {
-//			// no process is running, need to relocate the queue pointers
-//			poccurs = 0;
-//			p0 = p1 = p2 = p3 = NULL;
-//			quefir[0] = quefir[1] = quefir[2] = quefir[3] = 0;
-//			for (p = ptable.proc; p < &ptable.proc[NPROC]; p++) {
-//				if (p->state != RUNNABLE) continue;
-//				if (p->priority == 3 && quefir[3] == 0) {
-//					quefir[3] = 1;
-//					p3 = p;
-//				}
-//				else if (p->priority == 2 && quefir[2] == 0) {
-//					quefir[2] = 1;
-//					p2 = p;
-//				}
-//				else if (p->priority == 1 && quefir[1] == 0) {
-//					quefir[1] = 1;
-//					p1 = p;
-//				}
-//				else if (p->priority == 0 && quefir[0] == 0) {
-//					quefir[0] = 1;
-//					p0 = p;
-//				}
-//			}
-//		}
-//		/*----------zjh:step2:find and give it to proc-------------*/
-//		if (p3 != NULL)          proc = p3;
-//		else if (p2 != NULL)   proc = p2;
-//		else if (p1 != NULL)   proc = p1;
-//		else if (p0 != NULL)     proc = p0;
-//		else { //zjh:interupt and there will be a runnable (sooner or later)
-//			release(&ptable.lock);
-//			continue;//zjh:whitch means goto for(;;)
-//		}
-//
-//		/*----------zjh:step3:set item about time of all processes before run-------------*/
-//		quetag[proc->priority] = 1;
-//		proc->used_ticks[proc->priority]++;
-//		for (int i = 0; i < 4; i++) { // zjh:set all the wait ticks to be 0 when it starts runni
-//				proc->waited_ticks[i] = 0;
-//		}
-//
-//		for (t = ptable.proc; t < &ptable.proc[NPROC]; t++)
-//		{
-//			if (t->state == RUNNABLE && t->pid != proc->pid) {
-//					t->waited_ticks[t->priority]++;
-//			}
-//			if (t->waited_ticks[t->priority] == wait_limit[t->priority] && t->priority != 3) {
-//				for (i = 0; i < 4; i++) {  // set all the wait ticks to be 0 when it starts running.
-//
-//					t->waited_ticks[i] = 0;
-//				}
-//				t->priority++;
-//				if (t->priority > proc->priority)
-//					poccurs = 1;
-//			}
-//		}
-//
-//		if (proc->used_ticks[proc->priority] % mxtick[proc->priority] == 0 && proc->priority != 0)
-//		{//zjh:run out its time slice, priority--
-//			quetag[proc->priority] = 0;
-//			proc->priority--;
-//		}
-//
-//		/*----------zjh:step4:it's time to run it (some of these are intrinsic)-------------*/
-//		switchuvm(proc);
-//		proc->state = RUNNING;
-//		swtch(&cpu->scheduler, proc->context);
-//		switchkvm();
-//		if (proc->state != RUNNABLE) {
-//			quetag[proc->priority] = 0;
-//		}
-//		proc = 0;
-//		release(&ptable.lock);
-//	}
-//}
 
 
 // Enter scheduler.  Must hold only ptable.lock
