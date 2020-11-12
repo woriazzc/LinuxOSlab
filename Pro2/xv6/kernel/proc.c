@@ -316,35 +316,37 @@ scheduler(void)
     	if(p->priority == 0 && (p->state == RUNNABLE || p->state == RUNNING)){
     		p->que0_ticks++;
     	}
-		if(p->pid == proc->pid){
-			continue;
-		}
-		if (p->state == RUNNABLE) {
-				p->waited_ticks[p->priority]++;
-		}
-		if ((p->priority == 0 && p->waited_ticks[p->priority] == 500)
-			|| (p->priority != 0 && p->waited_ticks[p->priority] == 10*mxtick[p->priority])) {
-			if(p->priority != NPriority - 1)p->priority++;
+	if(p->pid == proc->pid){
+		continue;
+	}
+	if (p->state == RUNNABLE) {
+		p->waited_ticks[p->priority]++;
+	}
+	if ((p->priority == 0 && p->waited_ticks[p->priority] == 500)
+	|| (p->priority != 0 && p->waited_ticks[p->priority] == 10*mxtick[p->priority])) {
+		if(p->priority != NPriority - 1){
+			p->priority++;
+			p->que0_ticks = 0;
 		}
 	}
-    proc->que0_ticks = 0;
+    }
     for(int i = 0; i < NPriority; i++){
 		proc->waited_ticks[i] = 0;
-	}
-	proc->used_ticks[proc->priority]++;
-	if(proc->used_ticks[proc->priority] % mxtick[proc->priority] == 0 && proc->priority != 0){
-		nd_sched = 1;
-		proc->priority--;
-	}
+    }
+    proc->used_ticks[proc->priority]++;
+    if(proc->used_ticks[proc->priority] % mxtick[proc->priority] == 0 && proc->priority != 0){
+	nd_sched = 1;
+	proc->priority--;
+    }
 
-	switchuvm(proc);
-	proc->state = RUNNING;
-	swtch(&cpu->scheduler, proc->context);
-	switchkvm();
+    switchuvm(proc);
+    proc->state = RUNNING;
+    swtch(&cpu->scheduler, proc->context);
+    switchkvm();
 
-	if(proc->state != RUNNABLE){
-		nd_sched = 1;
-	}
+    if(proc->state != RUNNABLE){
+	nd_sched = 1;
+    }
     release(&ptable.lock);
   }
 }
@@ -526,3 +528,4 @@ int getpinfo(struct pstat * pst){
 	}
 	return 0;
 }
+
