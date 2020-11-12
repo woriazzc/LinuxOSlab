@@ -49,6 +49,7 @@ found:
   p->state = EMBRYO;
   p->pid = nextpid++;
   p->priority = NPriority - 1;
+  p->que0_ticks = 0;
   for(int i = 0; i < NPriority; i++){
 	  p->waited_ticks[i] = 0;
 	  p->used_ticks[i] = 0;
@@ -287,7 +288,17 @@ scheduler(void)
     	for(int i = 0; i < NPriority; i++)pr[i] = NULL;
     	for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
     	      if(p->state != RUNNABLE)continue;
-    	      if(pr[p->priority] == NULL)pr[p->priority] = p;
+    	      if(p->priority == 0){
+    	    	  if(pr[0] == NULL || p->que0_ticks > pr[0]->que0_ticks){
+    	    		  pr[0] = p;
+    	    	  }
+    	      }
+    	      else{
+    	    	  if(pr[p->priority] == NULL
+    	    		|| p->waited_ticks[p->priority] > pr[p->priority]->waited_ticks[p->priority]){
+    	    		  pr[p->priority] = p;
+    	    	  }
+    	      }
     	}
     	nd_sched = 0;
     }
@@ -302,6 +313,9 @@ scheduler(void)
     	continue;
     }
     for (p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+    	if(p->priority == 0 && (p->state == RUNNABLE || p->state == RUNNING)){
+    		p->que0_ticks++;
+    	}
 		if(p->pid == proc->pid){
 			continue;
 		}
@@ -313,6 +327,7 @@ scheduler(void)
 			if(p->priority != NPriority - 1)p->priority++;
 		}
 	}
+    proc->que0_ticks = 0;
     for(int i = 0; i < NPriority; i++){
 		proc->waited_ticks[i] = 0;
 	}
