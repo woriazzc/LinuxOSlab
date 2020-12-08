@@ -1,6 +1,5 @@
 CC=gcc
 CFLAGS=-lmem -L.
-
 all: mem mymain
 mem: mem.c
 	$(CC) -c -fpic mem.c -Wall -Werror
