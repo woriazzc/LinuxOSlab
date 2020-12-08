@@ -1,4 +1,5 @@
 #include "hash.h"
+#include <stdio.h>
 
 void hash_init(hash_t *hash, int size){
 	hash->size = size;

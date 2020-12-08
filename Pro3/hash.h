@@ -4,7 +4,7 @@
 #include "lock.h"
 #include "list.h"
 
-#define MAXHASH 100
+#define MAXHASH 1000010
 
 typedef struct __hash_t
 {

@@ -1,6 +1,8 @@
 export LD_LIBRARY_PATH=.:$LD_LIBRARY_PATH
+make test_counter
 make test_list
 make test_hash
+./counter_test > counter_res
 ./list_test 1 > list_res1
 ./list_test 2 > list_res2
 ./list_test 3 > list_res3
