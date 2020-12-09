@@ -4,7 +4,7 @@
 #include <sys/time.h>
 #include <unistd.h>
 #include "hash.h"
-#define MAX 1000000	//操作次数
+#define MAX 10000	//操作次数
 #define T 10	//尝试次数，取平均
 #define MXTHREAD 20	//最多线程数
 unsigned int type;
@@ -12,8 +12,9 @@ unsigned int size = 10000;
 int thread_count;
 hash_t hash;
 struct timeval tp1;
+struct timeval tmp;
 double start,end;
-double cost[T + 5], aver[MXTHREAD + 5], vari[MXTHREAD + 5];
+double aver[MXTHREAD + 10], vari[MXTHREAD + 10], cost[MXTHREAD + 10];
 unsigned int sizetab[6]={10,100,1000,10000,100000,1000000};
 void* t_hash1(void* rank);
 void* t_hash2(void* rank);
@@ -31,6 +32,7 @@ int main(int argc, char const *argv[])
 			else if(type == 2)printf("-----------Here is test of pthread_spinlock: -----------\n");
 			else printf("-----------Here is test of pthread_mutex: -----------\n");
 			for(j = 0; j < 6; j++){
+				aver[j] = vari[j] = 0.0;
 				size = sizetab[j];
 				printf("size = %d\n", size);
 				for(t = 0; t < T; t++){
@@ -41,13 +43,13 @@ int main(int argc, char const *argv[])
 					for(i = 0; i < thread_count; i++){
 						switch(op){
 							case 4:
-								pthread_create(&thread_handles[i],NULL,t_hash1,NULL);
+								pthread_create(&thread_handles[i],NULL,t_hash1,(void*)i);
 								break;
 							case 5:
-								pthread_create(&thread_handles[i],NULL,t_hash2,NULL);
+								pthread_create(&thread_handles[i],NULL,t_hash2,(void*)i);
 								break;
 							case 6:
-								pthread_create(&thread_handles[i],NULL,t_hash3,NULL);
+								pthread_create(&thread_handles[i],NULL,t_hash3,(void*)i);
 								break;
 						}
 					}
@@ -55,13 +57,20 @@ int main(int argc, char const *argv[])
 						pthread_join(thread_handles[i], NULL);
 					gettimeofday(&tp1,NULL);
 					end=tp1.tv_sec+tp1.tv_usec/1000000.0;
-					cost[t] = end - start;
+					aver[j] += end - start;
+					double sum = 0.0;
+					for(i = 0; i < thread_count; i++)
+						sum += cost[i];
+					sum /= thread_count;
+					double var = 0.0;
+					for(i = 0; i < thread_count; i++){
+						var += (cost[i] - sum)*(cost[i] - sum);
+					}
+					var /= thread_count;
+					vari[j] += var;
 					hash_free(&hash);
 				}
-				for(t = 0; t < T; t++)aver[j] += cost[t];
 				aver[j] /= T;
-				for(t = 0; t < T; t++)
-					vari[j] += (cost[t] - aver[j])*(cost[t] - aver[j]);
 				vari[j] /= T;
 			}
 			for(i = 0; i < 6; i++)printf("%lf%c", aver[i], " \n"[i==5]);
@@ -75,6 +84,7 @@ int main(int argc, char const *argv[])
 		else if(type == 2)printf("-----------Here is test of pthread_spinlock: -----------\n");
 		else printf("-----------Here is test of pthread_mutex: -----------\n");
 		for(thread_count = 1; thread_count <= MXTHREAD; thread_count++){
+			aver[thread_count] = vari[thread_count] = 0.0;
 			printf("thread = %d\n", thread_count);
 			for(t = 0; t < T; t++){
 				cost[t] = 0.0;
@@ -84,13 +94,13 @@ int main(int argc, char const *argv[])
 				for(i = 0; i < thread_count; i++){
 					switch(op){
 						case 1:
-							pthread_create(&thread_handles[i],NULL,t_hash1,NULL);
+							pthread_create(&thread_handles[i],NULL,t_hash1,(void*)i);
 							break;
 						case 2:
-							pthread_create(&thread_handles[i],NULL,t_hash2,NULL);
+							pthread_create(&thread_handles[i],NULL,t_hash2,(void*)i);
 							break;
 						case 3:
-							pthread_create(&thread_handles[i],NULL,t_hash3,NULL);
+							pthread_create(&thread_handles[i],NULL,t_hash3,(void*)i);
 							break;
 					}
 				}
@@ -98,13 +108,20 @@ int main(int argc, char const *argv[])
 					pthread_join(thread_handles[i], NULL);
 				gettimeofday(&tp1,NULL);
 				end=tp1.tv_sec+tp1.tv_usec/1000000.0;
-				cost[t] = end - start;
+				aver[thread_count] += end - start;
+				double sum = 0.0;
+				for(i = 0; i < thread_count; i++)
+					sum += cost[i];
+				sum /= thread_count;
+				double var = 0.0;
+				for(i = 0; i < thread_count; i++){
+					var += (cost[i] - sum)*(cost[i] - sum);
+				}
+				var /= thread_count;
+				vari[thread_count] += var;
 				hash_free(&hash);
 			}
-			for(t = 0; t < T; t++)aver[thread_count] += cost[t];
 			aver[thread_count] /= T;
-			for(t = 0; t < T; t++)
-				vari[thread_count] += (cost[t] - aver[thread_count])*(cost[t] - aver[thread_count]);
 			vari[thread_count] /= T;
 		}
 		for(i = 1; i <= MXTHREAD; i++)printf("%lf%c", aver[i], " \n"[i==MXTHREAD]);
@@ -114,28 +131,49 @@ int main(int argc, char const *argv[])
 }
 void* t_hash1(void* rank){
 	int i;
+	int rk = (int)rank;
+	double mstart, mend;
+	gettimeofday(&tmp,NULL);
+	mstart=tmp.tv_sec+tmp.tv_usec/1000000.0;
 	for(i=0;i<MAX;i++){
 		hash_insert(&hash, i);
 	}
+	gettimeofday(&tmp,NULL);
+	mend=tmp.tv_sec+tmp.tv_usec/1000000.0;
+	cost[rk] = mend - mstart;
 	return NULL;
 }
 void* t_hash2(void* rank){
 	int i;
+	int rk = (int)rank;
+	double mstart, mend;
+	gettimeofday(&tmp,NULL);
+	mstart=tmp.tv_sec+tmp.tv_usec/1000000.0;
 	for(i=0;i<MAX;i++){
 		hash_insert(&hash, i);
 	}
 	for(i=0;i<MAX;i++){
 		hash_delete(&hash, i);
 	}
+	gettimeofday(&tmp,NULL);
+	mend=tmp.tv_sec+tmp.tv_usec/1000000.0;
+	cost[rk] = mend - mstart;
 	return NULL;
 }
 void* t_hash3(void* rank){
 	int i;
+	int rk = (int)rank;
+	double mstart, mend;
+	gettimeofday(&tmp,NULL);
+	mstart=tmp.tv_sec+tmp.tv_usec/1000000.0;
 	for(i=0;i<MAX;i++){
 		hash_insert(&hash, rand()%100000);
 	}
 	for(i=0;i<MAX;i++){
 		hash_delete(&hash, rand()%100000);
 	}
+	gettimeofday(&tmp,NULL);
+	mend=tmp.tv_sec+tmp.tv_usec/1000000.0;
+	cost[rk] = mend - mstart;
 	return NULL;
 }
