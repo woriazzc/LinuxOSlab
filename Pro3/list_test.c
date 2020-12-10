@@ -5,7 +5,7 @@
 #include <unistd.h>
 #include "list.h"
 #define MAX 10000	//操作次数
-#define T 10	//尝试次数，取平均
+#define T 10//尝试次数，取平均
 #define MXTHREAD 20	//最多线程数
 unsigned int type;
 int thread_count;
@@ -17,7 +17,6 @@ double aver[MXTHREAD + 10], vari[MXTHREAD + 10], cost[MXTHREAD + 10];
 void* t_list1(void* rank);
 void* t_list2(void* rank);
 void* t_list3(void* rank);
-pthread_t thread_handles[MXTHREAD + 10];
 int i, t, j;
 int main(int argc, char const *argv[])
 {
@@ -29,6 +28,8 @@ int main(int argc, char const *argv[])
 		for(thread_count = 1; thread_count <= MXTHREAD; thread_count++){
 			aver[thread_count] = vari[thread_count] = 0.0;
 			printf("thread = %d\n", thread_count);
+			pthread_t* thread_handles;
+			thread_handles=malloc(thread_count* sizeof(pthread_t));
 			for(t = 0; t < T; t++){
 				list_init(&list);
 				gettimeofday(&tp1,NULL);
@@ -62,9 +63,11 @@ int main(int argc, char const *argv[])
 				var /= thread_count;
 				vari[thread_count] += var;
 				list_free(&list);
+				//printf("T = %d\n", t);
 			}
 			aver[thread_count] /= T;
 			vari[thread_count] /= T;
+			free(thread_handles);
 		}
 		for(i = 1; i <= MXTHREAD; i++)printf("%lf%c", aver[i], " \n"[i==MXTHREAD]);
 		for(i = 1; i <= MXTHREAD; i++)printf("%lf%c", vari[i], " \n"[i==MXTHREAD]);
@@ -94,9 +97,12 @@ void* t_list2(void* rank){
 	for(i=0;i<MAX;i++){
 		list_insert(&list, i);
 	}
-	for(i=0;i<MAX;i++){
+	for(i=MAX - 1;i >= 0;i--){
 		list_delete(&list, i);
+		//printf("%d\n", i);
+		//printf("%p\n", list.head);
 	}
+
 	gettimeofday(&tmp,NULL);
 	mend=tmp.tv_sec+tmp.tv_usec/1000000.0;
 	cost[rk] = mend - mstart;

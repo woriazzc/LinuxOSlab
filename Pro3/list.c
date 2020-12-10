@@ -1,5 +1,6 @@
 #include "list.h"
 #include <stdlib.h>
+#include <stdio.h>
 
 void list_init(list_t *list){
 	list->head = NULL;
@@ -11,8 +12,8 @@ void list_init(list_t *list){
 }
 void list_insert(list_t *list, unsigned int key){
 	node_t* nw = malloc(sizeof(node_t));
-	nw->value = key;
 	lock_acquire(list->locks[type]);
+	nw->value = key;
 	nw->next = list->head;
 	list->head = nw;
 	lock_release(list->locks[type]);
@@ -27,8 +28,9 @@ void list_delete(list_t *list, unsigned int key){
 				list->head = p->next;
 			}
 			else{
-				fa->next = p->next;
+				fa->next = fa->next->next;
 			}
+			//printf("%p\n", p);
 			free(p);
 			break;
 		}

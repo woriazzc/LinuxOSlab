@@ -23,14 +23,13 @@ void mutex_acquire(mutex_t *lock){
 		return;
 	}
 	while(1){
-		int v = lock->flag;
-		if(v == 0)return;
+		if(xchg(&(lock->flag), 1) == 0)return;
 		sys_futex((void*)(&(lock->flag)), FUTEX_WAIT, 1, NULL, NULL, 0);
 	}
 }
 void mutex_release(mutex_t *lock){
 	xchg(&(lock->flag), 0);
-	sys_futex((void*)(&(lock->flag)), 1, 1, NULL, NULL, 0);
+	sys_futex((void*)(&(lock->flag)), FUTEX_WAKE, 1, NULL, NULL, 0);
 }
 
 
