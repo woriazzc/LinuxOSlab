@@ -4,7 +4,7 @@
 #include <sys/time.h>
 #include <unistd.h>
 #include "hash.h"
-#define MAX 10000	//操作次数
+#define MAX 1000	//操作次数
 #define T 10	//尝试次数，取平均
 #define MXTHREAD 20	//最多线程数
 unsigned int type;
@@ -15,7 +15,7 @@ struct timeval tp1;
 struct timeval tmp;
 double start,end;
 double aver[MXTHREAD + 10], vari[MXTHREAD + 10], cost[MXTHREAD + 10];
-unsigned int sizetab[6]={10,100,1000,10000,100000,1000000};
+unsigned int sizetab[11]={10,50,100,500,1000,5000,10000,50000,100000,500000,1000000};
 void* t_hash1(void* rank);
 void* t_hash2(void* rank);
 void* t_hash3(void* rank);
@@ -31,7 +31,7 @@ int main(int argc, char const *argv[])
 			else if(type == 1)printf("-----------Here is test of mutex: -----------\n");
 			else if(type == 2)printf("-----------Here is test of pthread_spinlock: -----------\n");
 			else printf("-----------Here is test of pthread_mutex: -----------\n");
-			for(j = 0; j < 6; j++){
+			for(j = 0; j < 11; j++){
 				aver[j] = vari[j] = 0.0;
 				size = sizetab[j];
 				printf("size = %d\n", size);
@@ -73,8 +73,8 @@ int main(int argc, char const *argv[])
 				aver[j] /= T;
 				vari[j] /= T;
 			}
-			for(i = 0; i < 6; i++)printf("%lf%c", aver[i], " \n"[i==5]);
-			for(i = 0; i < 6; i++)printf("%lf%c", vari[i], " \n"[i==5]);
+			for(i = 0; i < 11; i++)printf("%lf%c", aver[i], " \n"[i==10]);
+			for(i = 0; i < 11; i++)printf("%lf%c", vari[i], " \n"[i==10]);
 		}
 		return 0;
 	}

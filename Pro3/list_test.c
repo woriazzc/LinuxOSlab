@@ -4,7 +4,7 @@
 #include <sys/time.h>
 #include <unistd.h>
 #include "list.h"
-#define MAX 10000	//操作次数
+#define MAX 1000	//操作次数
 #define T 10//尝试次数，取平均
 #define MXTHREAD 20	//最多线程数
 unsigned int type;
